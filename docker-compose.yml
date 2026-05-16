@@ -1,0 +1,86 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: af
+      POSTGRES_PASSWORD: af
+      POSTGRES_DB: agentfield
+    volumes:
+      - af-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U af -d agentfield"]
+      interval: 5s
+      retries: 5
+
+  agentfield:
+    image: agentfield/control-plane:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://af:af@postgres:5432/agentfield
+      AF_LISTEN_ADDR: ":8080"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "-O", "-", "http://localhost:8080/health"]
+      interval: 10s
+      retries: 5
+
+  triage-agent:
+    build: .
+    command: python -m agents.triage
+    depends_on:
+      agentfield:
+        condition: service_healthy
+    environment:
+      AGENTFIELD_SERVER_URL: http://agentfield:8080
+      TOKENROUTER_API_KEY: ${TOKENROUTER_API_KEY}
+      TOKENROUTER_BASE_URL: ${TOKENROUTER_BASE_URL:-https://api.tokenrouter.com/v1}
+
+  repair-agent:
+    build: .
+    command: python -m agents.repair
+    depends_on:
+      agentfield:
+        condition: service_healthy
+    environment:
+      AGENTFIELD_SERVER_URL: http://agentfield:8080
+      TOKENROUTER_API_KEY: ${TOKENROUTER_API_KEY}
+      TOKENROUTER_BASE_URL: ${TOKENROUTER_BASE_URL:-https://api.tokenrouter.com/v1}
+
+  verify-agent:
+    build: .
+    command: python -m agents.verify
+    depends_on:
+      agentfield:
+        condition: service_healthy
+    environment:
+      AGENTFIELD_SERVER_URL: http://agentfield:8080
+
+  audit-agent:
+    build: .
+    command: python -m agents.audit
+    depends_on:
+      agentfield:
+        condition: service_healthy
+    environment:
+      AGENTFIELD_SERVER_URL: http://agentfield:8080
+
+  webhook:
+    build: .
+    command: uvicorn webhook.github:app --host 0.0.0.0 --port 8000
+    depends_on:
+      agentfield:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      AGENTFIELD_SERVER_URL: http://agentfield:8080
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+
+volumes:
+  af-postgres-data:

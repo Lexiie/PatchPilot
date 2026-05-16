@@ -1,0 +1,30 @@
+version: 2
+
+repair:
+  max_attempts: 3
+  create_pr_default: draft
+  allowed_failure_types:
+    - lint
+    - format
+    - typecheck
+    - unit_test
+    - dependency_config
+  forbidden_failure_types:
+    - environment_missing_secret
+    - network_or_infra
+  forbidden_paths:
+    - .env*
+    - secrets/**
+    - infra/prod/**
+  require_human_review_for:
+    - auth/**
+    - billing/**
+    - payments/**
+    - migrations/**
+
+verification:
+  required_commands: []
+
+audit:
+  vc_signing_did: did:key:auto
+  retention_days: 90
