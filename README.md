@@ -1,4 +1,4 @@
-# PatchPilot v2
+# PatchPilot
 
 > Audit-grade CI repair automation. Multi-agent. Cryptographically auditable.
 
@@ -295,8 +295,7 @@ When AgentField is running:
 | Markdown PR body generation | ✅ |
 | 70 tests passing | ✅ |
 | Live TokenRouter LLM repair verified (`qwen/qwen3-coder-next`) | ✅ |
-| Live deployment (Zeabur) | ⬜ demo-day target |
-| End-to-end demo with real LLM | ⬜ demo-day target |
+| End-to-end demo with real LLM | ✅ |
 | GitHub App integration | ⬜ post-hackathon |
 
 ---
